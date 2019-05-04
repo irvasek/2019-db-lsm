@@ -27,7 +27,7 @@ public final class MyDAO implements DAO {
     private final List<SSTable> ssTables;
 
     /**
-     * Creates persistence DAO
+     * Creates persistence DAO.
      *
      * @param folder              the folder in which files will be written and read
      * @param flushThresholdBytes threshold of size of the memTable

@@ -48,7 +48,7 @@ public final class MemTable implements Table {
     }
 
     /**
-     * performs flush of the table in the file
+     * Performs flush of the table in the file.
      *
      * @param path the path of the file in which the table will be written
      * @throws IOException if an I/O error occurs

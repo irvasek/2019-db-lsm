@@ -30,7 +30,7 @@ public final class Value implements Comparable<Value> {
     }
 
     /**
-     * returns the size in bytes that the value will occupy in the file
+     * Returns the size in bytes that the value will occupy in the file.
      */
     public int getSizeBytes() {
         if (isTombstone) {
