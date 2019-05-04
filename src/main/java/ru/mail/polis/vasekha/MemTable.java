@@ -12,19 +12,19 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 public final class MemTable implements Table {
-    private NavigableMap<ByteBuffer, Row> memTable = new TreeMap<>();
-    private long sizeBytes = 0;
+    private NavigableMap<ByteBuffer, Row> table = new TreeMap<>();
+    private long sizeBytes;
 
     @NotNull
     @Override
-    public Iterator<Row> iterator(@NotNull ByteBuffer from) {
-        return memTable.tailMap(from).values().iterator();
+    public Iterator<Row> iterator(@NotNull final ByteBuffer from) {
+        return table.tailMap(from).values().iterator();
     }
 
     @Override
-    public void upsert(@NotNull ByteBuffer key, @NotNull ByteBuffer value) {
+    public void upsert(@NotNull final ByteBuffer key, @NotNull final ByteBuffer value) {
         final Row current = Row.of(key, value);
-        final Row previous = memTable.put(key, current);
+        final Row previous = table.put(key, current);
         if (previous == null) {
             sizeBytes += current.getSizeBytes();
         } else {
@@ -33,9 +33,9 @@ public final class MemTable implements Table {
     }
 
     @Override
-    public void remove(@NotNull ByteBuffer key) {
+    public void remove(@NotNull final ByteBuffer key) {
         final Row current = Row.remove(key);
-        final Row previous = memTable.put(key, current);
+        final Row previous = table.put(key, current);
         if (previous == null) {
             sizeBytes += current.getSizeBytes();
         } else {
@@ -47,11 +47,20 @@ public final class MemTable implements Table {
         return sizeBytes;
     }
 
+    /**
+     * performs flush of the table in the file
+     *
+     * @param path the path of the file in which the table will be written
+     * @throws IOException if an I/O error occurs
+     */
     public void flush(@NotNull final Path path) throws IOException {
-        try (final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
-            final ByteBuffer offsetsBuffer = ByteBuffer.allocate(memTable.size() * Integer.BYTES);
+        try (FileChannel fileChannel = FileChannel.open(
+                path,
+                StandardOpenOption.CREATE_NEW,
+                StandardOpenOption.WRITE)) {
+            final ByteBuffer offsetsBuffer = ByteBuffer.allocate(table.size() * Integer.BYTES);
             int offset = 0;
-            for (final Row row : memTable.values()) {
+            for (final Row row : table.values()) {
                 offsetsBuffer.putInt(offset);
                 final ByteBuffer rowBuffer = ByteBuffer.allocate(row.getSizeBytes());
                 final ByteBuffer key = row.getKey();
@@ -72,10 +81,10 @@ public final class MemTable implements Table {
             offsetsBuffer.rewind();
             fileChannel.write(offsetsBuffer);
             final ByteBuffer sizeBuffer = ByteBuffer.allocate(Integer.BYTES)
-                    .putInt(memTable.size())
+                    .putInt(table.size())
                     .rewind();
             fileChannel.write(sizeBuffer);
-            memTable = new TreeMap<>();
+            table = new TreeMap<>();
             sizeBytes = 0;
         }
     }

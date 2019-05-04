@@ -3,10 +3,15 @@ package ru.mail.polis.vasekha;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.collect.Iterators;
 import org.jetbrains.annotations.NotNull;
@@ -19,8 +24,15 @@ public final class MyDAO implements DAO {
     private final File folder;
     private final long flushThresholdBytes;
     private final MemTable memTable;
-    private final ArrayList<SSTable> ssTables;
+    private final List<SSTable> ssTables;
 
+    /**
+     * Creates persistence DAO
+     *
+     * @param folder              the folder in which files will be written and read
+     * @param flushThresholdBytes threshold of size of the memTable
+     * @throws IOException if an I/O error is thrown by a visitor method
+     */
     public MyDAO(@NotNull final File folder, final long flushThresholdBytes) throws IOException {
         this.folder = folder;
         this.flushThresholdBytes = flushThresholdBytes;
@@ -28,7 +40,7 @@ public final class MyDAO implements DAO {
         ssTables = new ArrayList<>();
         Files.walkFileTree(folder.toPath(), new SimpleFileVisitor<>() {
             @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
                 ssTables.add(new SSTable(file));
                 return FileVisitResult.CONTINUE;
             }
@@ -71,12 +83,15 @@ public final class MyDAO implements DAO {
     }
 
     private void flushMemTable() throws IOException {
-        final String SUFFIX = ".db";
-        final String SUFFIX_TMP = ".txt";
-        final String tmpFileName = System.currentTimeMillis() + SUFFIX_TMP;
+        final String suffix = ".db";
+        final String suffixTmp = ".txt";
+        final String tmpFileName = System.currentTimeMillis() + suffixTmp;
         memTable.flush(Path.of(folder.getAbsolutePath(), tmpFileName));
-        final String finalFileName = System.currentTimeMillis() + SUFFIX;
-        Files.move(Path.of(folder.getAbsolutePath(), tmpFileName), Path.of(folder.getAbsolutePath(), finalFileName), StandardCopyOption.ATOMIC_MOVE);
+        final String finalFileName = System.currentTimeMillis() + suffix;
+        Files.move(
+                Path.of(folder.getAbsolutePath(), tmpFileName),
+                Path.of(folder.getAbsolutePath(), finalFileName),
+                StandardCopyOption.ATOMIC_MOVE);
         ssTables.add(new SSTable(Path.of(folder.getAbsolutePath(), finalFileName)));
     }
 }

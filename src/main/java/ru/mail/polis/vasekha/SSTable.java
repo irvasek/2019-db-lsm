@@ -18,8 +18,11 @@ public final class SSTable implements Table {
     private final ByteBuffer rowsBuffer;
 
     SSTable(@NotNull final Path path) throws IOException {
-        try (final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ)) {
-            final ByteBuffer mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size()).order(ByteOrder.BIG_ENDIAN);
+        try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ)) {
+            final ByteBuffer mappedBuffer = fileChannel.map(
+                    FileChannel.MapMode.READ_ONLY,
+                    0,
+                    fileChannel.size()).order(ByteOrder.BIG_ENDIAN);
             rowsCount = mappedBuffer.getInt(mappedBuffer.limit() - Integer.BYTES);
             final ByteBuffer offsetsTmpBuffer = mappedBuffer.duplicate()
                     .position(mappedBuffer.limit() - Integer.BYTES * rowsCount - Integer.BYTES)
@@ -36,7 +39,7 @@ public final class SSTable implements Table {
 
     @NotNull
     @Override
-    public Iterator<Row> iterator(@NotNull ByteBuffer from) {
+    public Iterator<Row> iterator(@NotNull final ByteBuffer from) {
         return new Iterator<>() {
             private int position = position(from);
 
@@ -56,12 +59,12 @@ public final class SSTable implements Table {
     }
 
     @Override
-    public void upsert(@NotNull ByteBuffer key, @NotNull ByteBuffer value) {
+    public void upsert(@NotNull final ByteBuffer key, @NotNull final ByteBuffer value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void remove(@NotNull ByteBuffer key) {
+    public void remove(@NotNull final ByteBuffer key) {
         throw new UnsupportedOperationException();
     }
 

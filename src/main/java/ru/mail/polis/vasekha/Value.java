@@ -29,6 +29,9 @@ public final class Value implements Comparable<Value> {
         return isTombstone;
     }
 
+    /**
+     * returns the size in bytes that the value will occupy in the file
+     */
     public int getSizeBytes() {
         if (isTombstone) {
             return Long.BYTES;
