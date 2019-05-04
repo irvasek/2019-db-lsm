@@ -5,9 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
 
-public final class Row implements Comparable<Row> {
-    private final Comparator<Row> comparator = Comparator.comparing(Row::getKey).thenComparing(Row::getValue);
-
+public final class Row {
+    public static final Comparator<Row> comparator = Comparator.comparing(Row::getKey).thenComparing(Row::getValue);
     private final ByteBuffer key;
     private final Value value;
 
@@ -38,10 +37,5 @@ public final class Row implements Comparable<Row> {
 
     public int getSizeBytes() {
         return Integer.BYTES + key.remaining() + value.getSizeBytes();
-    }
-
-    @Override
-    public int compareTo(@NotNull final Row other) {
-        return comparator.compare(this, other);
     }
 }

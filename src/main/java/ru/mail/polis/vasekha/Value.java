@@ -48,6 +48,6 @@ public final class Value implements Comparable<Value> {
 
     @Override
     public int compareTo(@NotNull final Value other) {
-        return -Long.compare(timestamp, other.timestamp);
+        return Long.compare(other.timestamp, timestamp);
     }
 }
