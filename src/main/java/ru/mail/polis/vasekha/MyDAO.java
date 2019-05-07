@@ -45,7 +45,11 @@ public final class MyDAO implements DAO {
             @Override
             public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
                 if(file.toString().endsWith(SUFFIX)) {
-                    ssTables.add(new SSTable(file));
+                    try {
+                        ssTables.add(new SSTable(file));
+                    } catch(AssertionError ae){
+                        ae.printStackTrace();
+                    }
                 }
                 return FileVisitResult.CONTINUE;
             }

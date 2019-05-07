@@ -15,32 +15,30 @@ import java.util.NoSuchElementException;
 
 public final class SSTable implements Table {
     private int rowsCount;
-    private IntBuffer offsetsBuffer;
-    private ByteBuffer rowsBuffer;
+    private final IntBuffer offsetsBuffer;
+    private final ByteBuffer rowsBuffer;
 
-    SSTable(@NotNull final Path path) throws IOException {
+    SSTable(@NotNull final Path path) throws IOException, AssertionError {
         try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ)) {
             final File file = path.toFile();
-            if(file.length() > 0 && file.length() <= Integer.MAX_VALUE) {
-                final ByteBuffer mappedBuffer = fileChannel.map(
-                        FileChannel.MapMode.READ_ONLY,
-                        0,
-                        fileChannel.size()).order(ByteOrder.BIG_ENDIAN);
-                rowsCount = mappedBuffer.getInt(mappedBuffer.limit() - Integer.BYTES);
-                final int position = mappedBuffer.limit() - Integer.BYTES * rowsCount - Integer.BYTES;
-                if (position >= 0 && position <= mappedBuffer.limit()) {
-                    final ByteBuffer offsetsTmpBuffer = mappedBuffer.duplicate()
-                            .position(position)
-                            .limit(mappedBuffer.limit() - Integer.BYTES);
-                    offsetsBuffer = offsetsTmpBuffer.slice()
-                            .asIntBuffer()
-                            .asReadOnlyBuffer();
-                    rowsBuffer = mappedBuffer.duplicate()
-                            .limit(offsetsTmpBuffer.position())
-                            .slice()
-                            .asReadOnlyBuffer();
-                }
-            }
+            assert file.length() > 0 && file.length() <= Integer.MAX_VALUE;
+            final ByteBuffer mappedBuffer = fileChannel.map(
+                    FileChannel.MapMode.READ_ONLY,
+                    0,
+                    fileChannel.size()).order(ByteOrder.BIG_ENDIAN);
+            rowsCount = mappedBuffer.getInt(mappedBuffer.limit() - Integer.BYTES);
+            final int position = mappedBuffer.limit() - Integer.BYTES * rowsCount - Integer.BYTES;
+            assert position >= 0 && position <= mappedBuffer.limit();
+            final ByteBuffer offsetsTmpBuffer = mappedBuffer.duplicate()
+                    .position(position)
+                    .limit(mappedBuffer.limit() - Integer.BYTES);
+            offsetsBuffer = offsetsTmpBuffer.slice()
+                    .asIntBuffer()
+                    .asReadOnlyBuffer();
+            rowsBuffer = mappedBuffer.duplicate()
+                    .limit(offsetsTmpBuffer.position())
+                    .slice()
+                    .asReadOnlyBuffer();
         }
     }
 
@@ -94,6 +92,8 @@ public final class SSTable implements Table {
 
     @NotNull
     private ByteBuffer keyAt(final int position) {
+        assert position >=0 && position <= rowsCount;
+
         final int offset = offsetsBuffer.get(position);
         final int keySize = rowsBuffer.getInt(offset);
         return rowsBuffer.duplicate()
@@ -105,6 +105,7 @@ public final class SSTable implements Table {
 
     @NotNull
     private Row rowAt(final int position) {
+        assert position >= 0 && position <= rowsCount;
         int offset = offsetsBuffer.get(position);
         final int keySize = rowsBuffer.getInt(offset);
         final ByteBuffer key = rowsBuffer.duplicate()
