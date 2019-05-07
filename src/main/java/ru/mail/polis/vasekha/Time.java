@@ -8,6 +8,9 @@ public final class Time {
 
     private Time() {}
 
+    /**
+     * Returns time in nanos.
+     */
     public static long getTimeNanos() {
         final long currentTime = System.currentTimeMillis();
         if(currentTime != lastTime){
