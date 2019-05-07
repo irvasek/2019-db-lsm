@@ -6,7 +6,9 @@ public final class Time {
     private static long lastTime;
     private static AtomicInteger additionalTime = new AtomicInteger();
 
-    public static long getTimeNanos(){
+    private Time() {}
+
+    public static long getTimeNanos() {
         final long currentTime = System.currentTimeMillis();
         if(currentTime != lastTime){
             additionalTime.set(0);

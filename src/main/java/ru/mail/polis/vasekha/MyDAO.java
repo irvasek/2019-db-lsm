@@ -26,8 +26,8 @@ public final class MyDAO implements DAO {
     private final MemTable memTable;
     private final List<SSTable> ssTables;
 
-    final String SUFFIX = ".db";
-    final String SUFFIX_TMP = ".txt";
+    private static final String SUFFIX = ".db";
+    private static final String SUFFIX_TMP = ".txt";
 
     /**
      * Creates persistence DAO.
