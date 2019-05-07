@@ -2,6 +2,7 @@ package ru.mail.polis.vasekha;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -13,27 +14,33 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 public final class SSTable implements Table {
-    private final int rowsCount;
-    private final IntBuffer offsetsBuffer;
-    private final ByteBuffer rowsBuffer;
+    private int rowsCount;
+    private IntBuffer offsetsBuffer;
+    private ByteBuffer rowsBuffer;
 
     SSTable(@NotNull final Path path) throws IOException {
         try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ)) {
-            final ByteBuffer mappedBuffer = fileChannel.map(
-                    FileChannel.MapMode.READ_ONLY,
-                    0,
-                    fileChannel.size()).order(ByteOrder.BIG_ENDIAN);
-            rowsCount = mappedBuffer.getInt(mappedBuffer.limit() - Integer.BYTES);
-            final ByteBuffer offsetsTmpBuffer = mappedBuffer.duplicate()
-                    .position(mappedBuffer.limit() - Integer.BYTES * rowsCount - Integer.BYTES)
-                    .limit(mappedBuffer.limit() - Integer.BYTES);
-            offsetsBuffer = offsetsTmpBuffer.slice()
-                    .asIntBuffer()
-                    .asReadOnlyBuffer();
-            rowsBuffer = mappedBuffer.duplicate()
-                    .limit(offsetsTmpBuffer.position())
-                    .slice()
-                    .asReadOnlyBuffer();
+            final File file = path.toFile();
+            if(file.length() > 0 && file.length() <= Integer.MAX_VALUE) {
+                final ByteBuffer mappedBuffer = fileChannel.map(
+                        FileChannel.MapMode.READ_ONLY,
+                        0,
+                        fileChannel.size()).order(ByteOrder.BIG_ENDIAN);
+                rowsCount = mappedBuffer.getInt(mappedBuffer.limit() - Integer.BYTES);
+                final int position = mappedBuffer.limit() - Integer.BYTES * rowsCount - Integer.BYTES;
+                if (position >= 0 && position <= mappedBuffer.limit()) {
+                    final ByteBuffer offsetsTmpBuffer = mappedBuffer.duplicate()
+                            .position(position)
+                            .limit(mappedBuffer.limit() - Integer.BYTES);
+                    offsetsBuffer = offsetsTmpBuffer.slice()
+                            .asIntBuffer()
+                            .asReadOnlyBuffer();
+                    rowsBuffer = mappedBuffer.duplicate()
+                            .limit(offsetsTmpBuffer.position())
+                            .slice()
+                            .asReadOnlyBuffer();
+                }
+            }
         }
     }
 

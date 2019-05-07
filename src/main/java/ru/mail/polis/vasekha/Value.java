@@ -17,12 +17,12 @@ public final class Value implements Comparable<Value> {
 
     @NotNull
     public static Value of(@NotNull final ByteBuffer data) {
-        return new Value(System.currentTimeMillis(), false, data);
+        return new Value(Time.getTimeNanos(), false, data);
     }
 
     @NotNull
     public static Value remove() {
-        return new Value(System.currentTimeMillis(), true, ByteBuffer.allocate(0));
+        return new Value(Time.getTimeNanos(), true, ByteBuffer.allocate(0));
     }
 
     public boolean isRemoved() {

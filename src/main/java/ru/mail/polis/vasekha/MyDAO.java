@@ -26,6 +26,9 @@ public final class MyDAO implements DAO {
     private final MemTable memTable;
     private final List<SSTable> ssTables;
 
+    final String SUFFIX = ".db";
+    final String SUFFIX_TMP = ".txt";
+
     /**
      * Creates persistence DAO.
      *
@@ -41,7 +44,9 @@ public final class MyDAO implements DAO {
         Files.walkFileTree(folder.toPath(), new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
-                ssTables.add(new SSTable(file));
+                if(file.toString().endsWith(SUFFIX)) {
+                    ssTables.add(new SSTable(file));
+                }
                 return FileVisitResult.CONTINUE;
             }
         });
@@ -83,11 +88,9 @@ public final class MyDAO implements DAO {
     }
 
     private void flushMemTable() throws IOException {
-        final String suffix = ".db";
-        final String suffixTmp = ".txt";
-        final String tmpFileName = System.currentTimeMillis() + suffixTmp;
+        final String tmpFileName = System.currentTimeMillis() + SUFFIX_TMP;
         memTable.flush(Path.of(folder.getAbsolutePath(), tmpFileName));
-        final String finalFileName = System.currentTimeMillis() + suffix;
+        final String finalFileName = System.currentTimeMillis() + SUFFIX;
         Files.move(
                 Path.of(folder.getAbsolutePath(), tmpFileName),
                 Path.of(folder.getAbsolutePath(), finalFileName),
