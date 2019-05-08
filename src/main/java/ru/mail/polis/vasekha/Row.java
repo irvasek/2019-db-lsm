@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.Comparator;
 
 public final class Row {
-    public static final Comparator<Row> comparator = Comparator.comparing(Row::getKey).thenComparing(Row::getValue);
+    static final Comparator<Row> COMPARATOR = Comparator.comparing(Row::getKey).thenComparing(Row::getValue);
     private final ByteBuffer key;
     private final Value value;
 

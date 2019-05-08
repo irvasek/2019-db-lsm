@@ -52,7 +52,9 @@ public final class MyDAO implements DAO {
                     try {
                         ssTables.add(new SSTable(file));
                     } catch (IllegalArgumentException iae) {
-                        log.error(iae.getMessage());
+                        if (iae.getMessage() != null) {
+                            log.error(iae.getMessage());
+                        }
                     }
                 }
                 return FileVisitResult.CONTINUE;
@@ -68,7 +70,7 @@ public final class MyDAO implements DAO {
         for (final SSTable ssTable : ssTables) {
             iterators.add(ssTable.iterator(from));
         }
-        final Iterator<Row> mergeSorted = Iterators.mergeSorted(iterators, Row.comparator);
+        final Iterator<Row> mergeSorted = Iterators.mergeSorted(iterators, Row.COMPARATOR);
         final Iterator<Row> collapsed = Iters.collapseEquals(mergeSorted, Row::getKey);
         final Iterator<Row> result = Iterators.filter(collapsed, row -> !row.getValue().isRemoved());
         return Iterators.transform(result, row -> Record.of(row.getKey(), row.getValue().getData()));

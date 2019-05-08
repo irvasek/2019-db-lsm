@@ -144,7 +144,7 @@ public final class SSTable implements Table {
 
     @NotNull
     private ByteBuffer keyAt(final int position) {
-        if (position < 0 && position > rowsCount) {
+        if (position < 0 || position > rowsCount) {
             throw new IllegalArgumentException("Invalid position of key");
         }
         final int offset = offsetsBuffer.get(position);
@@ -158,7 +158,7 @@ public final class SSTable implements Table {
 
     @NotNull
     private Row rowAt(final int position) {
-        if (position < 0 && position > rowsCount) {
+        if (position < 0 || position > rowsCount) {
             throw new IllegalArgumentException("Invalid position of row");
         }
         int offset = offsetsBuffer.get(position);
