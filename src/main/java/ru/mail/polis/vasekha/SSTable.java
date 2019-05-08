@@ -60,7 +60,7 @@ public final class SSTable implements Table {
      * @param path the path of the file in which the values will be written
      * @throws IOException if an I/O error occurs
      */
-    public static void writeToFile(@NotNull final Path path, @NotNull Collection<Row> values) throws IOException {
+    public static void writeToFile(@NotNull final Path path, @NotNull final Collection<Row> values) throws IOException {
         try (FileChannel fileChannel = FileChannel.open(
                 path,
                 StandardOpenOption.CREATE_NEW,
