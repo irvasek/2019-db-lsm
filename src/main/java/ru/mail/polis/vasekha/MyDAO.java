@@ -3,31 +3,30 @@ package ru.mail.polis.vasekha;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Iterator;
-import java.util.List;
 
 import com.google.common.collect.Iterators;
 import org.jetbrains.annotations.NotNull;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.mail.polis.DAO;
 import ru.mail.polis.Iters;
 import ru.mail.polis.Record;
 
 public final class MyDAO implements DAO {
+    private static final Logger log = LoggerFactory.getLogger(MyDAO.class);
+    private static final String SUFFIX = ".db";
+    private static final String SUFFIX_TMP = ".tmp";
     private final File folder;
     private final long flushThresholdBytes;
     private final MemTable memTable;
-    private final List<SSTable> ssTables;
-
-    private static final String SUFFIX = ".db";
-    private static final String SUFFIX_TMP = ".txt";
+    private final Collection<SSTable> ssTables;
 
     /**
      * Creates persistence DAO.
@@ -41,14 +40,14 @@ public final class MyDAO implements DAO {
         this.flushThresholdBytes = flushThresholdBytes;
         memTable = new MemTable();
         ssTables = new ArrayList<>();
-        Files.walkFileTree(folder.toPath(), new SimpleFileVisitor<>() {
+        Files.walkFileTree(folder.toPath(), EnumSet.noneOf(FileVisitOption.class), 1, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
-                if(file.toString().endsWith(SUFFIX)) {
+                if (file.toString().endsWith(SUFFIX)) {
                     try {
                         ssTables.add(new SSTable(file));
-                    } catch(AssertionError ae){
-                        ae.printStackTrace();
+                    } catch (IllegalArgumentException iae) {
+                        log.error(iae.getMessage());
                     }
                 }
                 return FileVisitResult.CONTINUE;
@@ -59,7 +58,7 @@ public final class MyDAO implements DAO {
     @NotNull
     @Override
     public Iterator<Record> iterator(@NotNull final ByteBuffer from) {
-        final ArrayList<Iterator<Row>> iterators = new ArrayList<>();
+        final Collection<Iterator<Row>> iterators = new ArrayList<>();
         iterators.add(memTable.iterator(from));
         for (final SSTable ssTable : ssTables) {
             iterators.add(ssTable.iterator(from));

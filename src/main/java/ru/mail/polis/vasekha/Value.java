@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.ByteBuffer;
 
 public final class Value implements Comparable<Value> {
+    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private final long timestamp;
     private final boolean isTombstone;
     private final ByteBuffer data;
@@ -22,7 +23,7 @@ public final class Value implements Comparable<Value> {
 
     @NotNull
     public static Value remove() {
-        return new Value(Time.getTimeNanos(), true, ByteBuffer.allocate(0));
+        return new Value(Time.getTimeNanos(), true, EMPTY_BUFFER);
     }
 
     public boolean isRemoved() {
