@@ -52,9 +52,7 @@ public final class MyDAO implements DAO {
                     try {
                         ssTables.add(new SSTable(file));
                     } catch (IllegalArgumentException iae) {
-                        if (iae.getMessage() != null) {
-                            log.error(iae.getMessage());
-                        }
+                        log.error("Cannot create SStable from " + file.getFileName() + ": " + iae.getMessage());
                     }
                 }
                 return FileVisitResult.CONTINUE;
