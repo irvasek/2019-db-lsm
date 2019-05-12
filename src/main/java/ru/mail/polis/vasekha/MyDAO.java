@@ -104,9 +104,9 @@ public final class MyDAO implements DAO {
     }
 
     private void flushMemTable() throws IOException {
-        final String tmpFileName = System.currentTimeMillis() + SUFFIX_TMP;
+        final String tmpFileName = Time.getTimeNanos() + SUFFIX_TMP;
         memTable.flush(Path.of(folder.getAbsolutePath(), tmpFileName));
-        final String finalFileName = System.currentTimeMillis() + SUFFIX;
+        final String finalFileName = Time.getTimeNanos() + SUFFIX;
         Files.move(
                 Path.of(folder.getAbsolutePath(), tmpFileName),
                 Path.of(folder.getAbsolutePath(), finalFileName),
@@ -117,14 +117,14 @@ public final class MyDAO implements DAO {
     @Override
     public void compact() throws IOException {
         final Iterator<Row> alive = aliveRowIterator(Value.EMPTY_BUFFER);
-        final String tmpFileName = System.currentTimeMillis() + SUFFIX_TMP;
+        final String tmpFileName = Time.getTimeNanos() + SUFFIX_TMP;
         SSTable.writeToFile(Path.of(folder.getAbsolutePath(), tmpFileName), Lists.newArrayList(alive));
-        for (SSTable ssTable : ssTables) {
+        for (final SSTable ssTable : ssTables) {
             Files.delete(ssTable.getPath());
         }
         ssTables.clear();
         memTable.clear();
-        final String finalFileName = System.currentTimeMillis() + SUFFIX;
+        final String finalFileName = Time.getTimeNanos() + SUFFIX;
         Files.move(
                 Path.of(folder.getAbsolutePath(), tmpFileName),
                 Path.of(folder.getAbsolutePath(), finalFileName),
