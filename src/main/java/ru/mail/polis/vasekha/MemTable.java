@@ -45,6 +45,11 @@ public final class MemTable implements Table {
         return sizeBytes;
     }
 
+    public void clear() {
+        table = new TreeMap<>();
+        sizeBytes = 0;
+    }
+
     /**
      * Performs flush of the table to the file.
      *
@@ -53,7 +58,6 @@ public final class MemTable implements Table {
      */
     public void flush(@NotNull final Path path) throws IOException {
         SSTable.writeToFile(path, table.values());
-        table = new TreeMap<>();
-        sizeBytes = 0;
+        clear();
     }
 }

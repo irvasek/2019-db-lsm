@@ -15,12 +15,13 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 public final class SSTable implements Table {
-    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
+    private final Path path;
     private final int rowsCount;
     private final IntBuffer offsetsBuffer;
     private final ByteBuffer rowsBuffer;
 
     SSTable(@NotNull final Path path) throws IOException {
+        this.path = path;
         try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ)) {
             final File file = path.toFile();
             if (file.length() == 0 || file.length() > Integer.MAX_VALUE) {
@@ -30,30 +31,34 @@ public final class SSTable implements Table {
                     FileChannel.MapMode.READ_ONLY,
                     0,
                     fileChannel.size()).order(ByteOrder.BIG_ENDIAN);
-            rowsCount = mappedBuffer.getInt(mappedBuffer.limit() - Integer.BYTES);
-            final int position = mappedBuffer.limit() - Integer.BYTES * rowsCount - Integer.BYTES;
+            this.rowsCount = mappedBuffer.getInt(mappedBuffer.limit() - Integer.BYTES);
+            final int position = mappedBuffer.limit() - Integer.BYTES * this.rowsCount - Integer.BYTES;
             if (position < 0 || position > mappedBuffer.limit()) {
                 throw new IllegalArgumentException("Invalid file");
             }
             final ByteBuffer offsetsTmpBuffer = mappedBuffer.duplicate()
                     .position(position)
                     .limit(mappedBuffer.limit() - Integer.BYTES);
-            offsetsBuffer = offsetsTmpBuffer.slice()
+            this.offsetsBuffer = offsetsTmpBuffer.slice()
                     .asIntBuffer()
                     .asReadOnlyBuffer();
-            rowsBuffer = mappedBuffer.duplicate()
+            this.rowsBuffer = mappedBuffer.duplicate()
                     .limit(offsetsTmpBuffer.position())
                     .slice()
                     .asReadOnlyBuffer();
         }
     }
 
+    public Path getPath() {
+        return path;
+    }
+
     /**
      * Writes the values to the file.
      * File storage format:
      * Row format in file: key size | key | timestamp | value size | value
-     *                     if value is tombstone
-     *                     key size | key | -timestamp
+     * if value is tombstone
+     * key size | key | -timestamp
      * array of offsets that contains positions of rows
      * rows count
      *
@@ -172,7 +177,7 @@ public final class SSTable implements Table {
 
         final long timestamp = rowsBuffer.position(offset).getLong();
         if (timestamp < 0) {
-            return new Row(key, new Value(-timestamp, true, EMPTY_BUFFER));
+            return new Row(key, new Value(-timestamp, true, Value.EMPTY_BUFFER));
         }
         final int dataSize = rowsBuffer.getInt(offset + Long.BYTES);
         offset += Long.BYTES + Integer.BYTES;

@@ -16,6 +16,7 @@ import java.util.EnumSet;
 import java.util.Iterator;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import org.jetbrains.annotations.NotNull;
 
 import org.slf4j.Logger;
@@ -61,8 +62,7 @@ public final class MyDAO implements DAO {
     }
 
     @NotNull
-    @Override
-    public Iterator<Record> iterator(@NotNull final ByteBuffer from) {
+    private Iterator<Row> aliveRowIterator(@NotNull final ByteBuffer from) {
         final Collection<Iterator<Row>> iterators = new ArrayList<>();
         iterators.add(memTable.iterator(from));
         for (final SSTable ssTable : ssTables) {
@@ -70,8 +70,14 @@ public final class MyDAO implements DAO {
         }
         final Iterator<Row> mergeSorted = Iterators.mergeSorted(iterators, Row.COMPARATOR);
         final Iterator<Row> collapsed = Iters.collapseEquals(mergeSorted, Row::getKey);
-        final Iterator<Row> result = Iterators.filter(collapsed, row -> !row.getValue().isRemoved());
-        return Iterators.transform(result, row -> Record.of(row.getKey(), row.getValue().getData()));
+        return Iterators.filter(collapsed, row -> !row.getValue().isRemoved());
+    }
+
+    @NotNull
+    @Override
+    public Iterator<Record> iterator(@NotNull final ByteBuffer from) {
+        final Iterator<Row> alive = aliveRowIterator(from);
+        return Iterators.transform(alive, row -> Record.of(row.getKey(), row.getValue().getData()));
     }
 
     @Override
@@ -92,12 +98,32 @@ public final class MyDAO implements DAO {
 
     @Override
     public void close() throws IOException {
-        flushMemTable();
+        if (memTable.getSizeBytes() > 0) {
+            flushMemTable();
+        }
     }
 
     private void flushMemTable() throws IOException {
         final String tmpFileName = System.currentTimeMillis() + SUFFIX_TMP;
         memTable.flush(Path.of(folder.getAbsolutePath(), tmpFileName));
+        final String finalFileName = System.currentTimeMillis() + SUFFIX;
+        Files.move(
+                Path.of(folder.getAbsolutePath(), tmpFileName),
+                Path.of(folder.getAbsolutePath(), finalFileName),
+                StandardCopyOption.ATOMIC_MOVE);
+        ssTables.add(new SSTable(Path.of(folder.getAbsolutePath(), finalFileName)));
+    }
+
+    @Override
+    public void compact() throws IOException {
+        final Iterator<Row> alive = aliveRowIterator(Value.EMPTY_BUFFER);
+        final String tmpFileName = System.currentTimeMillis() + SUFFIX_TMP;
+        SSTable.writeToFile(Path.of(folder.getAbsolutePath(), tmpFileName), Lists.newArrayList(alive));
+        for (SSTable ssTable : ssTables) {
+            Files.delete(ssTable.getPath());
+        }
+        ssTables.clear();
+        memTable.clear();
         final String finalFileName = System.currentTimeMillis() + SUFFIX;
         Files.move(
                 Path.of(folder.getAbsolutePath(), tmpFileName),

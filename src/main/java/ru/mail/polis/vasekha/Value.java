@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.ByteBuffer;
 
 public final class Value implements Comparable<Value> {
-    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
+    static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private final long timestamp;
     private final boolean isTombstone;
     private final ByteBuffer data;
