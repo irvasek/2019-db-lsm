@@ -57,7 +57,7 @@ public final class MemTable implements Table {
      * @throws IOException if an I/O error occurs
      */
     public void flush(@NotNull final Path path) throws IOException {
-        SSTable.writeToFile(path, table.values());
+        SSTable.writeToFile(path, table.values().iterator());
         clear();
     }
 }

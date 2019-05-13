@@ -118,7 +118,7 @@ public final class MyDAO implements DAO {
     public void compact() throws IOException {
         final Iterator<Row> alive = aliveRowIterator(Value.EMPTY_BUFFER);
         final String tmpFileName = Time.getTimeNanos() + SUFFIX_TMP;
-        SSTable.writeToFile(Path.of(folder.getAbsolutePath(), tmpFileName), Lists.newArrayList(alive));
+        SSTable.writeToFile(Path.of(folder.getAbsolutePath(), tmpFileName), alive);
         for (final SSTable ssTable : ssTables) {
             Files.delete(ssTable.getPath());
         }

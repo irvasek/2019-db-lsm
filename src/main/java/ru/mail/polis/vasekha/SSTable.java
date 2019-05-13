@@ -10,6 +10,7 @@ import java.nio.IntBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -65,15 +66,16 @@ public final class SSTable implements Table {
      * @param path the path of the file in which the values will be written
      * @throws IOException if an I/O error occurs
      */
-    public static void writeToFile(@NotNull final Path path, @NotNull final Collection<Row> values) throws IOException {
+    public static void writeToFile(@NotNull final Path path, @NotNull final Iterator<Row> iterator) throws IOException {
         try (FileChannel fileChannel = FileChannel.open(
                 path,
                 StandardOpenOption.CREATE_NEW,
                 StandardOpenOption.WRITE)) {
-            final ByteBuffer offsetsBuffer = ByteBuffer.allocate(values.size() * Integer.BYTES);
+            final Collection<Integer> offsets = new ArrayList<>();
             int offset = 0;
-            for (final Row row : values) {
-                offsetsBuffer.putInt(offset);
+            while (iterator.hasNext()) {
+                final Row row = iterator.next();
+                offsets.add(offset);
                 final ByteBuffer rowBuffer = ByteBuffer.allocate(row.getSizeBytes());
                 final ByteBuffer key = row.getKey();
                 final Value value = row.getValue();
@@ -90,10 +92,14 @@ public final class SSTable implements Table {
                 fileChannel.write(rowBuffer);
                 offset += row.getSizeBytes();
             }
+            final ByteBuffer offsetsBuffer = ByteBuffer.allocate(Integer.BYTES * offsets.size());
+            for (final Integer value : offsets) {
+                offsetsBuffer.putInt(value);
+            }
             offsetsBuffer.rewind();
             fileChannel.write(offsetsBuffer);
             final ByteBuffer sizeBuffer = ByteBuffer.allocate(Integer.BYTES)
-                    .putInt(values.size())
+                    .putInt(offsets.size())
                     .rewind();
             fileChannel.write(sizeBuffer);
         }
