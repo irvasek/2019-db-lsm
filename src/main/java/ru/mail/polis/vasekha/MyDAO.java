@@ -16,7 +16,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import org.jetbrains.annotations.NotNull;
 
 import org.slf4j.Logger;
